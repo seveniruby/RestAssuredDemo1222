@@ -72,5 +72,19 @@ public class TesterHomeTest {
         ;
     }
 
+    @Test
+    public void jsonPathDemo(){
+        String title = "[北京沙龙] TesterHome 北京沙龙第 11 期，开始报名~";
+        given().when().get("https://testerhome.com/api/v3/topics.json")
+        .then()
+                .statusCode(200)
+                .body("topics.title[0]", equalTo(title))
+                .body("topics.size()", equalTo(23))
+                .body("topics.find {it.title.contains('北京沙龙')}.title", equalTo(title))
+                .body("topics.findAll {it.title.contains('北京沙龙')}.title[0]", equalTo(title))
+
+        ;
+    }
+
 
 }
