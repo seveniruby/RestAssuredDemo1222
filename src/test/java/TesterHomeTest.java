@@ -23,7 +23,7 @@ public class TesterHomeTest {
     public void getDemo(){
         given()
                 .log().all()
-                .proxy(8080)
+                //.proxy(8080)
                 .param("wd", "mp3")
                 .param("ie", "utf-8")
                 .cookie("PSTM", "1510600412")
@@ -48,6 +48,28 @@ public class TesterHomeTest {
                 .post("http://jenkins.testing-studio.com:8080/j_acegi_security_check")
         .then()
                 .statusCode(302);
+    }
+
+    @Test
+    public void htmlPathDemo(){
+        given()
+                .log().all()
+                //.proxy(8080)
+                .param("wd", "mp3")
+                .param("ie", "utf-8")
+                .cookie("PSTM", "1510600412")
+                .cookie("BIDUPSID", "85614512151C6A21725938906A7419A2")
+                .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) " +
+                        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36")
+                .get("https://www.baidu.com/s")
+                .then()
+                .log().all()
+                .statusCode(200)
+                .body("html.head.title", equalTo("mp3_百度搜索"))
+                .body("**.find{it.@class=='nums_text'}", equalTo("百度为您找到相关结果约56,500,000个"))
+                .body(hasXPath("//*[@class='nums_text' and contains(text(), '百度为您找到相关结果约56,500,000个')]"))
+
+        ;
     }
 
 
