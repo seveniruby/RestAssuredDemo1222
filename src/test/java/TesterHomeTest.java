@@ -86,5 +86,34 @@ public class TesterHomeTest {
         ;
     }
 
+    @Test
+    public void xmlPathDemo(){
+        given()
+                .when().get("http://jenkins.testing-studio.com:8080/job/AllureDemo/api/xml")
+        .then()
+                .statusCode(200)
+                .body("freeStyleProject.displayName", equalTo("AllureDemo"))
+                .body("..lastBuild.number", equalTo("16"))
+                .body("..lastBuild.number.toFloat()", equalTo(16f))
+                .body("**.find {it.name()=='lastSuccessfulBuild'}.number", equalTo("1"))
+                .body("**.find {it.name()=='lastSuccessfulBuild'}.number.toInteger()", equalTo(1))
+                .body("**.findAll {it.number=='1'}[-1].url", equalTo("http://jenkins.testing-studio.com:8080/job/AllureDemo/1/"))
+        ;
+    }
+
+    @Test
+    public void hamcrestDemo(){
+        given()
+                .when().get("http://jenkins.testing-studio.com:8080/job/AllureDemo/api/xml")
+                .then()
+                .statusCode(200)
+                .body("..lastBuild.number.toFloat()", greaterThanOrEqualTo(16f))
+                .body("..lastBuild.number.toInteger()", greaterThanOrEqualTo(16))
+                .body("..lastBuild.number.toDouble()", closeTo(16,2))
+                .body("**.find {it.name()=='lastSuccessfulBuild'}.number", equalTo("1"))
+                .body("**.find {it.name()=='lastSuccessfulBuild'}.number.toInteger()", equalTo(1))
+     ;
+    }
+
 
 }
