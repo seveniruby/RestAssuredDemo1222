@@ -35,4 +35,20 @@ public class TesterHomeTest {
                 .log().all()
                 .statusCode(200);
     }
+
+    @Test
+    public void postDemo(){
+        given()
+                .proxy(8080)
+                .formParam("j_username", "abc")
+                .formParam("j_password", "123")
+                .formParam("from", "/")
+                .formParam("Submit", "Sign in")
+        .when()
+                .post("http://jenkins.testing-studio.com:8080/j_acegi_security_check")
+        .then()
+                .statusCode(302);
+    }
+
+
 }
