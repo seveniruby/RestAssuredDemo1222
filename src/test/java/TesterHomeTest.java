@@ -232,4 +232,17 @@ public class TesterHomeTest {
         System.out.println(login);
     }
 
+    @Test
+    public void httpbasic(){
+        given().auth().basic("hogwarts", "123456")
+        .when().get("http://jenkins.testing-studio.com:9001/").prettyPeek()
+        .then().statusCode(200);
+    }
+
+    @Test
+    public void auth2(){
+        given().auth().oauth2("185f15c52b44bfc7103232ff1a98ed16480f57f1")
+        .when().get("https://api.github.com/user/emails").prettyPeek()
+        .then().statusCode(200);
+    }
 }
