@@ -51,9 +51,15 @@ public class TesterHomeTest {
         }
     };
 
+    public static SessionFilter sessionFilter=new SessionFilter();
+
     @BeforeClass
     public static void beforeAll() {
         useRelaxedHTTPSValidation();
+        proxy(8080);
+        System.out.println(filters().size());
+        filters(sessionFilter);
+        config = RestAssured.config().sessionConfig(new SessionConfig().sessionIdName("JSESSIONID.dd4a903c"));
     }
 
     @Test
@@ -334,10 +340,6 @@ public class TesterHomeTest {
 
     @Test
     public void jenkinsBySessionFilter(){
-        RestAssured.proxy(8080);
-
-        RestAssured.config = RestAssured.config().sessionConfig(new SessionConfig().sessionIdName("JSESSIONID.dd4a903c"));
-        SessionFilter sessionFilter=new SessionFilter();
         given()
                 .filter(sessionFilter)
                 .formParam("j_username", "hogwarts")
@@ -347,6 +349,20 @@ public class TesterHomeTest {
 
 
         given().filter(sessionFilter)
+                .when().log().all().get("http://jenkins.testing-studio.com:8080/")
+                .then().log().all().statusCode(200);
+    }
+
+    @Test
+    public void jenkinsByGlobalSessionFilter(){
+        given()
+                .formParam("j_username", "hogwarts")
+                .formParam("j_password", "hogwarts123456")
+                .when().post("http://jenkins.testing-studio.com:8080/j_acegi_security_check")
+                .then().statusCode(302);
+
+
+        given()
                 .when().log().all().get("http://jenkins.testing-studio.com:8080/")
                 .then().log().all().statusCode(200);
     }
