@@ -1,6 +1,9 @@
+import io.restassured.RestAssured;
 import io.restassured.builder.ResponseBuilder;
+import io.restassured.config.SessionConfig;
 import io.restassured.filter.Filter;
 import io.restassured.filter.FilterContext;
+import io.restassured.filter.session.SessionFilter;
 import io.restassured.http.ContentType;
 import io.restassured.mapper.ObjectMapperType;
 import io.restassured.response.Response;
@@ -310,4 +313,42 @@ public class TesterHomeTest {
                 .when().log().all().get("http://jenkins.testing-studio.com:9001/base64.json")
                 .then().statusCode(200).body("data.items.quote.name[0]", equalTo("上证指数"));
     }
+
+    @Test
+    public void jenkins(){
+        RestAssured.proxy(8080);
+
+        String cookie=given()
+                .formParam("j_username", "hogwarts")
+                .formParam("j_password", "hogwarts123456")
+        .when().post("http://jenkins.testing-studio.com:8080/j_acegi_security_check")
+        .then().statusCode(302)
+        .extract().cookie("JSESSIONID.dd4a903c");
+        System.out.println(cookie);
+
+
+        given().cookie("JSESSIONID.dd4a903c", cookie)
+        .when().log().all().get("http://jenkins.testing-studio.com:8080/")
+        .then().log().all().statusCode(200);
+    }
+
+    @Test
+    public void jenkinsBySessionFilter(){
+        RestAssured.proxy(8080);
+
+        RestAssured.config = RestAssured.config().sessionConfig(new SessionConfig().sessionIdName("JSESSIONID.dd4a903c"));
+        SessionFilter sessionFilter=new SessionFilter();
+        given()
+                .filter(sessionFilter)
+                .formParam("j_username", "hogwarts")
+                .formParam("j_password", "hogwarts123456")
+                .when().post("http://jenkins.testing-studio.com:8080/j_acegi_security_check")
+                .then().statusCode(302);
+
+
+        given().filter(sessionFilter)
+                .when().log().all().get("http://jenkins.testing-studio.com:8080/")
+                .then().log().all().statusCode(200);
+    }
+
 }
