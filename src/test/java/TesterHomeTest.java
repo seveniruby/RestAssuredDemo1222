@@ -1,22 +1,52 @@
+import io.restassured.builder.ResponseBuilder;
+import io.restassured.filter.Filter;
+import io.restassured.filter.FilterContext;
 import io.restassured.http.ContentType;
 import io.restassured.mapper.ObjectMapperType;
 import io.restassured.response.Response;
 import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.FilterableRequestSpecification;
+import io.restassured.specification.FilterableResponseSpecification;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.kohsuke.rngom.parse.host.Base;
+
+import static org.junit.Assert.*;
 
 import java.io.File;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 import static io.restassured.RestAssured.*;
 import static io.restassured.matcher.RestAssuredMatchers.*;
+import static io.restassured.path.json.JsonPath.from;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.*;
 import static io.restassured.module.jsv.JsonSchemaValidator.*;
 
+
 public class TesterHomeTest {
+
+
+    public static Filter decodeFilter=new Filter() {
+        @Override
+        public Response filter(FilterableRequestSpecification req, FilterableResponseSpecification res, FilterContext filterContext) {
+            System.out.println("alter request");
+            req.header("USER", "seveniruby");
+            Response response=filterContext.next(req, res);
+
+            Response responseNew=new ResponseBuilder().clone(response)
+                    .setBody(
+                            Base64.getDecoder().decode(response.body().asString().trim())
+                    )
+                    .setContentType(ContentType.JSON)
+                    .build();
+            System.out.println("alter response");
+            return responseNew;
+        }
+    };
 
     @BeforeClass
     public static void beforeAll() {
@@ -90,6 +120,8 @@ public class TesterHomeTest {
         given().when().get("https://testerhome.com/api/v3/topics.json")
                 .then()
                 .statusCode(200)
+                //not support
+                //.body("topics..login[0]", equalTo("xxx"))
                 .body("topics.title[0]", equalTo(title))
                 .body("topics.size()", equalTo(23))
                 .body("topics.find {it.title.contains('北京沙龙')}.title", equalTo(title))
@@ -244,5 +276,38 @@ public class TesterHomeTest {
         given().auth().oauth2("185f15c52b44bfc7103232ff1a98ed16480f57f1")
         .when().get("https://api.github.com/user/emails").prettyPeek()
         .then().statusCode(200);
+    }
+
+
+    @Test
+    public void decode(){
+        given().auth().basic("hogwarts", "123456")
+        .when().get("http://jenkins.testing-studio.com:9001/base64.json")
+        .then().statusCode(200).body("data.items.quote.name", equalTo("上证指数"));
+    }
+
+    @Test
+    public void decode2(){
+        String body=given().auth().basic("hogwarts", "123456")
+                .when().get("http://jenkins.testing-studio.com:9001/base64.json")
+                .then().statusCode(200)
+                .extract().body().asString();
+        System.out.println(body);
+
+        String bodyDecode=new String(Base64.getDecoder().decode(body.trim()));
+        System.out.println(bodyDecode);
+
+        String name=from(bodyDecode).get("data.items.quote.name[0]");
+        System.out.println(name);
+        assertThat(name, equalTo("上证指数"));
+    }
+
+    @Test
+    public void decodeByFilter(){
+        given().log().all().proxy(8080)
+                .filter(decodeFilter)
+                .auth().basic("hogwarts", "123456")
+                .when().log().all().get("http://jenkins.testing-studio.com:9001/base64.json")
+                .then().statusCode(200).body("data.items.quote.name[0]", equalTo("上证指数"));
     }
 }
