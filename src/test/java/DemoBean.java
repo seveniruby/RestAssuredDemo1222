@@ -8,6 +8,13 @@ import javax.xml.bind.annotation.XmlValue;
 @XmlRootElement
 public class DemoBean {
 
+
+    protected String name;
+    private Integer id;
+    private Integer parentid=3;
+    private Integer order;
+
+
     public String getName() {
         return name;
     }
@@ -40,9 +47,4 @@ public class DemoBean {
         this.order = order;
     }
 
-    @JacksonXmlProperty(localName = "first_name")
-    private String name;
-    private Integer id;
-    private Integer parentid;
-    private Integer order;
 }

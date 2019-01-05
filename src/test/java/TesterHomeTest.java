@@ -1,5 +1,7 @@
 import io.restassured.http.ContentType;
 import io.restassured.mapper.ObjectMapperType;
+import io.restassured.response.Response;
+import io.restassured.response.ValidatableResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,18 +19,19 @@ import static io.restassured.module.jsv.JsonSchemaValidator.*;
 public class TesterHomeTest {
 
     @BeforeClass
-    public static void beforeAll(){
+    public static void beforeAll() {
         useRelaxedHTTPSValidation();
     }
+
     @Test
-    public void topics(){
+    public void topics() {
         get("https://testerhome.com/api/v3/topics.json")
                 .then()
                 .body("topics[0].title", containsString("上海沙龙"));
     }
 
     @Test
-    public void getDemo(){
+    public void getDemo() {
         given()
                 .log().all()
                 //.proxy(8080)
@@ -39,27 +42,27 @@ public class TesterHomeTest {
                 .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_1) " +
                         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/70.0.3538.110 Safari/537.36")
                 .get("https://www.baidu.com/s")
-        .then()
+                .then()
                 .log().all()
                 .statusCode(200);
     }
 
     @Test
-    public void postDemo(){
+    public void postDemo() {
         given()
                 .proxy(8080)
                 .formParam("j_username", "abc")
                 .formParam("j_password", "123")
                 .formParam("from", "/")
                 .formParam("Submit", "Sign in")
-        .when()
+                .when()
                 .post("http://jenkins.testing-studio.com:8080/j_acegi_security_check")
-        .then()
+                .then()
                 .statusCode(302);
     }
 
     @Test
-    public void htmlPathDemo(){
+    public void htmlPathDemo() {
         given()
                 .log().all()
                 //.proxy(8080)
@@ -76,16 +79,16 @@ public class TesterHomeTest {
                 .body("html.head.title", equalTo("mp3_百度搜索"))
                 .body("**.find{it.@class=='nums_text'}", equalTo("百度为您找到相关结果约56,500,000个"))
         //百度做了升级，html不标准导致xml解析会报错，xpath就用不了了
-                //.body(hasXPath("//*[@class='nums_text' and contains(text(), '百度为您找到相关结果约56,500,000个')]"))
+        //.body(hasXPath("//*[@class='nums_text' and contains(text(), '百度为您找到相关结果约56,500,000个')]"))
 
         ;
     }
 
     @Test
-    public void jsonPathDemo(){
+    public void jsonPathDemo() {
         String title = "[北京沙龙] TesterHome 北京沙龙第 11 期，开始报名~";
         given().when().get("https://testerhome.com/api/v3/topics.json")
-        .then()
+                .then()
                 .statusCode(200)
                 .body("topics.title[0]", equalTo(title))
                 .body("topics.size()", equalTo(23))
@@ -96,10 +99,10 @@ public class TesterHomeTest {
     }
 
     @Test
-    public void xmlPathDemo(){
+    public void xmlPathDemo() {
         given()
                 .when().get("http://jenkins.testing-studio.com:8080/job/AllureDemo/api/xml")
-        .then()
+                .then()
                 .statusCode(200)
                 .body("freeStyleProject.displayName", equalTo("AllureDemo"))
                 .body("..lastBuild.number", equalTo("16"))
@@ -111,17 +114,17 @@ public class TesterHomeTest {
     }
 
     @Test
-    public void hamcrestDemo(){
+    public void hamcrestDemo() {
         given()
                 .when().get("http://jenkins.testing-studio.com:8080/job/AllureDemo/api/xml")
                 .then()
                 .statusCode(200)
                 .body("..lastBuild.number.toFloat()", greaterThanOrEqualTo(16f))
                 .body("..lastBuild.number.toInteger()", greaterThanOrEqualTo(16))
-                .body("..lastBuild.number.toDouble()", closeTo(16,2))
+                .body("..lastBuild.number.toDouble()", closeTo(16, 2))
                 .body("**.find {it.name()=='lastSuccessfulBuild'}.number", equalTo("1"))
                 .body("**.find {it.name()=='lastSuccessfulBuild'}.number.toInteger()", equalTo(1))
-     ;
+        ;
     }
 
     @Test
@@ -151,12 +154,16 @@ public class TesterHomeTest {
         ;
 
     }
+
     @Test
-            public void xmlPostDemo(){
-        given().proxy(8080)
+    public void xmlPostDemo() {
+        DemoBean demoBean=new DemoBean();
+        demoBean.setId(1);
+        demoBean.setName("xxxxxxxx");
+        given().log().all()
                 .queryParam("access_token", "xxxxx")
                 .contentType(ContentType.XML)
-                .body(new DemoBean(), ObjectMapperType.JAXB)
+                .body(demoBean, ObjectMapperType.JAXB)
                 .when()
                 .post("https://qyapi.weixin.qq.com/cgi-bin/department/create")
 
@@ -165,23 +172,64 @@ public class TesterHomeTest {
 
 
     @Test
-    public void timeout(){
+    public void timeout() {
         given().log().all()
-        .when().log().all().get("https://testerhome.com/api/v3/topics.json")
-        .then().log().all()
+                .when().log().all().get("https://testerhome.com/api/v3/topics.json")
+                .then().log().all()
                 .statusCode(200)
                 .time(lessThanOrEqualTo(2500L), TimeUnit.MILLISECONDS)
                 .body("topics[0].title", containsString("沙龙"));
     }
 
     @Test
-    public void schema(){
+    public void schema() {
         given().when().get("https://testerhome.com/api/v3/topics/6040.json")
-        .then()
+                .then()
                 .body(matchesJsonSchema(new File("/tmp/2.json")));
     }
 
+    @Test
+    public void extract(){
+        HashMap<String, Object> topic=given().log().all()
+                .when().get("https://testerhome.com/api/v3/topics.json").prettyPeek()
+                .then().log().all().statusCode(200)
+                .extract().path("topics.find {it.title.contains(\"第五届\")}");
+        System.out.println(topic);
 
 
+        String login=given().log().all()
+                .when().get("https://testerhome.com/api/v3/topics.json").prettyPeek()
+                .then().log().all().statusCode(200)
+                .extract().path("topics.find {it.title.contains(\"第五届\")}.user.login");
+        System.out.println(login);
+
+
+    }
+
+    @Test
+    public void extract2(){
+        ValidatableResponse validatableResponse=given().log().all()
+                .when().get("https://testerhome.com/api/v3/topics.json").prettyPeek()
+                .then().log().all().statusCode(200);
+
+        HashMap<String,Object> topic=validatableResponse.extract().path("topics.find {it.title.contains(\"第五届\")}");
+        String login=validatableResponse.extract().path("topics.find {it.title.contains(\"第五届\")}.user.login");
+        System.out.println(topic);
+        System.out.println(login);
+    }
+
+    //最经常使用的方式
+    @Test
+    public void extract3(){
+        Response response=given().log().all()
+                .when().get("https://testerhome.com/api/v3/topics.json").prettyPeek()
+                .then().log().all().statusCode(200)
+                .extract().response();
+
+        HashMap<String,Object> topic=response.path("topics.find {it.title.contains(\"第五届\")}");
+        String login=response.path("topics.find {it.title.contains(\"第五届\")}.user.login");
+        System.out.println(topic);
+        System.out.println(login);
+    }
 
 }
